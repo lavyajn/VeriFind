@@ -46,3 +46,29 @@ exports.reportStolenGasless = async (req, res) => {
         res.status(500).json({ success: false, error: errorMessage });
     }
 };
+
+// NEW: Check the true status of a device on the blockchain
+exports.checkStatus = async (req, res) => {
+    try {
+        const tokenId = req.params.id;
+        
+        // We only need a provider to read data (no wallet/gas required)
+        const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+        const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, provider);
+
+        // Fetch the struct from the blockchain
+        const itemData = await contract.items(tokenId);
+        
+        // In Solidity Enum: 0 = REGISTERED (Secure), 1 = STOLEN
+        const isStolen = itemData[1].toString() === "1";
+
+        res.json({
+            success: true,
+            isMinted: itemData[3], // The armor boolean we added!
+            status: isStolen ? "STOLEN" : "SECURE"
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, error: "Failed to read blockchain" });
+    }
+};

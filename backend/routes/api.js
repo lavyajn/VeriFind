@@ -13,4 +13,8 @@ const upload = multer({ dest: 'uploads/' });
 router.post('/upload-item', upload.single('image'), uploadImageAndSave);
 router.post('/report-stolen', reportStolenGasless); // NEW Gasless Route
 
+// Add this new GET route near your other routes
+const { checkStatus } = require('../controllers/relayerController');
+router.get('/status/:id', checkStatus);
+
 module.exports = router;
