@@ -2,7 +2,7 @@ import pkg from 'hardhat';
 const { ethers } = pkg;
 
 async function main() {
-    const contractAddress = "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9";
+    const contractAddress = "0x610178dA211FEF7D417bC0e6FeD39F05609AD788";
     
     // Connect to your deployed contract
     const AssetGuard = await ethers.getContractAt("AssetGuard", contractAddress);

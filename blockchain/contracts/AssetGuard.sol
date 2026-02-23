@@ -56,8 +56,18 @@ contract AssetGuard is ERC721, ERC721URIStorage, Ownable {
         items[tokenId].reportDate = block.timestamp;
         emit ItemReported(tokenId, Status.STOLEN);
     }
+    // 3. THE RECOVERY (Done by User OR Node.js Relayer)
+    function reportRecovered(uint256 tokenId) public {
+        require(items[tokenId].isMinted == true, "CRITICAL: This device does not exist on the blockchain!");
+        // Only the owner or the Relayer can unlock it
+        require(msg.sender == ownerOf(tokenId) || approvedRelayers[msg.sender], "Not authorized!");
+        require(items[tokenId].status == Status.STOLEN, "Device is not currently stolen.");
+        
+        items[tokenId].status = Status.RECOVERED;
+        emit ItemReported(tokenId, Status.RECOVERED);
+    }
 
-    // 3. THE THEFT-BLOCK (Protects against resale)
+    // 4. THE THEFT-BLOCK (Protects against resale)
     function _update(address to, uint256 tokenId, address auth) internal override(ERC721) returns (address) {
         address from = _ownerOf(tokenId);
         if (from != address(0)) {

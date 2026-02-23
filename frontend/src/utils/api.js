@@ -24,3 +24,23 @@ export const checkDeviceStatus = async (tokenId) => {
         return { success: false, error: "Network error" };
     }
 };
+
+export const reportItemRecovered = async (tokenId) => {
+    try {
+        const response = await axios.post(`${BACKEND_URL}/recover/${tokenId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error reporting recovered:", error);
+        return { success: false, error: "Network error" };
+    }
+};
+
+export const fetchMeshAlerts = async () => {
+    try {
+        const response = await axios.get(`${BACKEND_URL}/alerts`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching alerts:", error);
+        return { success: false, alerts: [] };
+    }
+};

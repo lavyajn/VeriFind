@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Vibration } from 'react-native';
-import { reportItemStolen, checkDeviceStatus } from '../utils/api';
+import { reportItemStolen, checkDeviceStatus, reportItemRecovered } from '../utils/api';
 
 export default function DeviceDetails({ route, navigation }) {
   const { scannedData } = route.params; 
@@ -63,6 +63,43 @@ export default function DeviceDetails({ route, navigation }) {
     );
   };
 
+  const handleNotifyOwner = () => {
+    Alert.alert(
+      "📍 Location Shared", 
+      "The owner has been securely notified of this device's current location via the VeriFind network.",
+      [{ text: "Done", style: "default" }]
+    );
+  };
+
+  const handleRecovered = async () => {
+    Alert.alert(
+      "🔓 UNLOCK ASSET",
+      "Are you the owner? This will restore the asset to a SECURE state on the blockchain.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "CONFIRM RECOVERY", 
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const result = await reportItemRecovered(tokenId);
+              if (result.success) {
+                Vibration.vibrate([0, 250, 250, 250]); // Happy vibration pattern!
+                setStatus('RECOVERED'); 
+                Alert.alert("✅ Asset Unlocked", "The blockchain has been updated.");
+              } else {
+                 Alert.alert("❌ Error", result.error || "Transaction failed.");
+              }
+            } catch (error) {
+              Alert.alert("Network Error", "Failed to contact the relayer node.");
+            }
+            setLoading(false);
+          }
+        }
+      ]
+    );
+  };
+
   if (fetchingStatus) {
       return (
           <View style={[styles.container, { justifyContent: 'center' }]}>
@@ -85,17 +122,22 @@ export default function DeviceDetails({ route, navigation }) {
           <Text style={styles.value}>#{tokenId}</Text>
         </View>
         <View style={styles.divider} />
+        {/* NETWORK STATUS BADGE */}
         <View style={styles.row}>
           <Text style={styles.label}>Network Status</Text>
           <View style={[
             styles.badge, 
-            !isMinted ? { backgroundColor: '#E5E5EA' } : // Grey background for invalid
-            status === 'SECURE' ? styles.badgeSecure : styles.badgeStolen
+            !isMinted ? { backgroundColor: '#E5E5EA' } : 
+            status === 'STOLEN' ? styles.badgeStolen : 
+            status === 'RECOVERED' ? { backgroundColor: '#E5F0FF' } : // Blue bg
+            styles.badgeSecure 
           ]}>
             <Text style={[
               styles.badgeText, 
-              { color: !isMinted ? '#8E8E93' : // Grey text for invalid
-                       status === 'SECURE' ? '#34C759' : '#FF3B30' }
+              { color: !isMinted ? '#8E8E93' : 
+                       status === 'STOLEN' ? '#FF3B30' : 
+                       status === 'RECOVERED' ? '#007AFF' : // Blue text
+                       '#34C759' }
             ]}>
               {!isMinted ? 'INVALID' : status}
             </Text>
@@ -103,16 +145,30 @@ export default function DeviceDetails({ route, navigation }) {
         </View>
       </View>
 
+      {/* ACTION BUTTONS */}
       <View style={styles.actionContainer}>
         {!isMinted ? (
            <Text style={styles.lockedText}>⚠️ UNREGISTERED DEVICE</Text>
-        ) : status === 'STOLEN' ? (
-           <Text style={styles.lockedText}>🔒 This device is permanently locked.</Text>
         ) : loading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color="#ff3b30" />
-            <Text style={styles.loadingText}>Signing Web3 Transaction...</Text>
+            <ActivityIndicator size="large" color={status === 'STOLEN' ? "#007AFF" : "#ff3b30"} />
+            <Text style={styles.loadingText}>Verifying Cryptographic Signature...</Text>
           </View>
+        ) : status === 'STOLEN' ? (
+           <View>
+             <Text style={styles.lockedText}>🔒 DEVICE LOCKED BY OWNER</Text>
+             <Text style={styles.subtext}>This asset has been reported stolen on the blockchain.</Text>
+             
+             {/* Samaritan Button */}
+             <TouchableOpacity style={styles.foundButton} onPress={handleNotifyOwner} activeOpacity={0.8}>
+                <Text style={styles.foundButtonText}>📍 NOTIFY OWNER FOUND</Text>
+             </TouchableOpacity>
+
+             {/* Owner Unlock Button */}
+             <TouchableOpacity style={[styles.foundButton, { backgroundColor: '#007AFF', marginTop: 15 }]} onPress={handleRecovered} activeOpacity={0.8}>
+                <Text style={styles.foundButtonText}>🔓 I AM THE OWNER (UNLOCK)</Text>
+             </TouchableOpacity>
+           </View>
         ) : (
           <TouchableOpacity style={styles.panicButton} onPress={handleReportStolen} activeOpacity={0.8}>
             <Text style={styles.panicText}>🚨 REPORT STOLEN</Text>
@@ -142,5 +198,8 @@ const styles = StyleSheet.create({
   panicText: { color: '#FFFFFF', fontSize: 18, fontWeight: '800', letterSpacing: 1 },
   loadingBox: { alignItems: 'center', padding: 20 },
   loadingText: { marginTop: 15, color: '#8E8E93', fontSize: 16, fontWeight: '600' },
-  lockedText: { textAlign: 'center', color: '#FF3B30', fontSize: 18, fontWeight: '700', marginTop: 20 }
+  lockedText: { textAlign: 'center', color: '#FF3B30', fontSize: 18, fontWeight: '700', marginTop: 20 },
+  subtext: { textAlign: 'center', color: '#8E8E93', fontSize: 14, marginTop: 8, marginBottom: 20 },
+  foundButton: { backgroundColor: '#1C1C1E', paddingVertical: 18, borderRadius: 16, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
+  foundButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 1 },
 });

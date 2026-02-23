@@ -1,28 +1,24 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator } from '@react-navigation/stack';
 
+// 1. Make sure all your screens are imported!
 import HomeScreen from './src/screens/HomeScreen';
 import ScannerScreen from './src/screens/ScannerScreen';
 import DeviceDetails from './src/screens/DeviceDetails';
 
-const Stack = createNativeStackNavigator();
+const Stack = createStackNavigator();
 
 export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen 
-          name="Home" 
-          component={HomeScreen} 
-          options={{ title: 'AssetGuard Dashboard' }}
-        />
-        <Stack.Screen 
-          name="Scanner" 
-          component={ScannerScreen} 
-          options={{ title: 'Scan Device QR' }}
-        />
-        <Stack.Screen name="DeviceDetails" component={DeviceDetails} options={{ title: 'Asset Details' }} />
+        
+        {/* 2. Make sure the 'name' prop exactly matches what we used in navigation.navigate() */}
+        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ScannerScreen" component={ScannerScreen} options={{ title: 'Scan Asset' }} />
+        <Stack.Screen name="DeviceDetails" component={DeviceDetails} options={{ title: 'Asset Status' }} />
+        
       </Stack.Navigator>
     </NavigationContainer>
   );

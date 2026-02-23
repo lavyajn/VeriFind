@@ -3,6 +3,8 @@ const Item = require('../models/Item');
 
 // Load the ABI. Adjust the path if you saved it somewhere else!
 const contractABI = require('../../blockchain/config/contractABI.json'); 
+// In-memory database for live Mesh Network alerts
+let activeMeshAlerts = [];
 
 exports.reportStolenGasless = async (req, res) => {
     try {
@@ -31,6 +33,17 @@ exports.reportStolenGasless = async (req, res) => {
         
         // Wait for the blockchain to officially mine the block
         const receipt = await tx.wait();
+        // NEW: Broadcast to Mesh Network
+     const exists = activeMeshAlerts.find(a => a.id === tokenId.toString());
+     if (!exists) {
+         activeMeshAlerts.unshift({
+             id: tokenId.toString(),
+             token: '#' + tokenId,
+             model: 'VeriFind Protected Asset', // You can pull real data from IPFS later
+             time: 'Just now',
+             distance: '0.2 miles away'
+         });
+     }
 
         res.status(200).json({
             success: true,
@@ -59,16 +72,45 @@ exports.checkStatus = async (req, res) => {
         // Fetch the struct from the blockchain
         const itemData = await contract.items(tokenId);
         
-        // In Solidity Enum: 0 = REGISTERED (Secure), 1 = STOLEN
-        const isStolen = itemData[1].toString() === "1";
+        // Translate the Solidity Enum (0 = SECURE, 1 = STOLEN, 2 = RECOVERED)
+        const statusEnum = itemData[1].toString();
+        let readableStatus = "SECURE";
+        if (statusEnum === "1") readableStatus = "STOLEN";
+        if (statusEnum === "2") readableStatus = "RECOVERED";
 
         res.json({
             success: true,
-            isMinted: itemData[3], // The armor boolean we added!
-            status: isStolen ? "STOLEN" : "SECURE"
+            isMinted: itemData[3], 
+            status: readableStatus
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, error: "Failed to read blockchain" });
     }
+};
+
+// NEW: Unlock a recovered device
+exports.markRecovered = async (req, res) => {
+    try {
+        const tokenId = req.params.id;
+        const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+        const wallet = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
+        const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, wallet);
+
+        console.log(`Relayer preparing to UNLOCK Token ID: ${tokenId}...`);
+        const tx = await contract.reportRecovered(tokenId);
+        await tx.wait();
+        // NEW: Remove from Mesh Network
+     activeMeshAlerts = activeMeshAlerts.filter(a => a.id !== tokenId.toString());
+
+        res.json({ success: true, txHash: tx.hash });
+    } catch (error) {
+        console.error("Recovery Error:", error);
+        res.status(500).json({ success: false, error: "Failed to unlock device." });
+    }
+};
+
+// NEW: Get all active BOLO alerts
+exports.getActiveAlerts = (req, res) => {
+    res.json({ success: true, alerts: activeMeshAlerts });
 };

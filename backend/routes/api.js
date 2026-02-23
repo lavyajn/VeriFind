@@ -4,7 +4,7 @@ const multer = require('multer');
 
 // Import Controllers
 const { uploadImageAndSave } = require('../controllers/ipfsController');
-const { reportStolenGasless } = require('../controllers/relayerController'); // NEW
+const { reportStolenGasless, markRecovered, getActiveAlerts,checkStatus} = require('../controllers/relayerController'); // NEW
 
 // Set up Multer
 const upload = multer({ dest: 'uploads/' });
@@ -13,8 +13,11 @@ const upload = multer({ dest: 'uploads/' });
 router.post('/upload-item', upload.single('image'), uploadImageAndSave);
 router.post('/report-stolen', reportStolenGasless); // NEW Gasless Route
 
-// Add this new GET route near your other routes
-const { checkStatus } = require('../controllers/relayerController');
 router.get('/status/:id', checkStatus);
+
+router.post('/recover/:id', markRecovered);
+
+// Add this line with your other routes:
+router.get('/alerts', getActiveAlerts);
 
 module.exports = router;

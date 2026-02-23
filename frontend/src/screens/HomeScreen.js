@@ -1,26 +1,138 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, FlatList, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { fetchMeshAlerts } from '../utils/api'; 
+
+const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome to AssetGuard</Text>
-      <Text style={styles.subtitle}>Secure your physical assets on the blockchain.</Text>
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-      <TouchableOpacity 
-        style={styles.button}
-        onPress={() => navigation.navigate('Scanner')}
-      >
-        <Text style={styles.buttonText}>Scan New Device QR</Text>
-      </TouchableOpacity>
+  // useFocusEffect triggers every time this screen becomes active
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const loadAlerts = async () => {
+        setLoading(true);
+        const data = await fetchMeshAlerts();
+        if (isActive && data.success) {
+          setAlerts(data.alerts);
+        }
+        if (isActive) setLoading(false);
+      };
+
+      loadAlerts();
+
+      return () => { isActive = false; };
+    }, [])
+  );
+
+  const renderAlert = ({ item }) => (
+    <View style={styles.alertCard}>
+      <View style={styles.alertHeader}>
+        <View style={styles.alertPulse} />
+        <Text style={styles.alertTitle}>BOLO ALERT</Text>
+        <Text style={styles.alertTime}>{item.time}</Text>
+      </View>
+      <Text style={styles.alertDevice}>{item.model} <Text style={styles.alertToken}>({item.token})</Text></Text>
+      <Text style={styles.alertDistance}>📍 Last pinged: {item.distance}</Text>
     </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        
+        {/* Header Section */}
+        <View style={styles.header}>
+          <Text style={styles.logoText}>Veri<Text style={styles.logoHighlight}>Find</Text></Text>
+          <Text style={styles.tagline}>Decentralized Asset Protection</Text>
+        </View>
+
+        {/* Network Stats Card */}
+        <View style={styles.statsCard}>
+          <Text style={styles.statsTitle}>Network Status</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <View style={styles.pulseDot} />
+              <Text style={styles.statLabel}>Nodes Active</Text>
+              <Text style={styles.statValue}>124</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>Assets Secured</Text>
+              <Text style={styles.statValue}>8,492</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* MESH NETWORK FEED */}
+        <View style={styles.feedContainer}>
+          <Text style={styles.feedTitle}>⚠️ ACTIVE MESH ALERTS</Text>
+          {loading ? (
+             <ActivityIndicator size="small" color="#FF3B30" style={{ marginTop: 20 }} />
+          ) : alerts.length === 0 ? (
+             <Text style={styles.emptyFeedText}>No active alerts in your area. All assets secure.</Text>
+          ) : (
+            <FlatList 
+              data={alerts}
+              keyExtractor={item => item.id}
+              renderItem={renderAlert}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            />
+          )}
+        </View>
+
+        {/* The Primary Action */}
+        <View style={styles.actionSection}>
+          <TouchableOpacity 
+            style={styles.scanButton} 
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('ScannerScreen')} 
+          >
+            <Text style={styles.scanButtonText}>📷 LAUNCH SCANNER</Text>
+          </TouchableOpacity>
+        </View>
+
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#f5f5f5' },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 10, color: '#333' },
-  subtitle: { fontSize: 16, textAlign: 'center', marginBottom: 40, color: '#666' },
-  button: { backgroundColor: '#007AFF', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 10 },
-  buttonText: { color: 'white', fontSize: 18, fontWeight: 'bold' }
+  safeArea: { flex: 1, backgroundColor: '#F2F2F7' },
+  container: { flex: 1, paddingHorizontal: 24, paddingTop: 20, justifyContent: 'space-between' },
+  
+  header: { marginTop: 20, alignItems: 'center' },
+  logoText: { fontSize: 42, fontWeight: '900', color: '#1C1C1E', letterSpacing: -1 },
+  logoHighlight: { color: '#007AFF' },
+  tagline: { fontSize: 14, color: '#8E8E93', marginTop: 5, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.5 },
+  
+  statsCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.08, shadowRadius: 15, elevation: 5, marginTop: 30 },
+  statsTitle: { fontSize: 14, color: '#8E8E93', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 20 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  statBox: { flex: 1 },
+  pulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#34C759', position: 'absolute', right: 10, top: 6 },
+  statLabel: { fontSize: 13, color: '#8E8E93', fontWeight: '500', marginBottom: 4 },
+  statValue: { fontSize: 28, fontWeight: '800', color: '#1C1C1E' },
+  divider: { width: 1, height: 40, backgroundColor: '#E5E5EA', marginHorizontal: 15 },
+  
+  feedContainer: { flex: 1, marginTop: 30 },
+  feedTitle: { fontSize: 14, color: '#8E8E93', fontWeight: '700', letterSpacing: 1, marginBottom: 15 },
+  emptyFeedText: { color: '#8E8E93', textAlign: 'center', marginTop: 20, fontWeight: '500' },
+  alertCard: { backgroundColor: '#FFEBEA', padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: '#FFD1CE' },
+  alertHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  alertPulse: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF3B30', marginRight: 8 },
+  alertTitle: { fontSize: 14, fontWeight: '800', color: '#FF3B30', flex: 1, letterSpacing: 0.5 },
+  alertTime: { fontSize: 12, color: '#FF3B30', fontWeight: '600', opacity: 0.8 },
+  alertDevice: { fontSize: 16, fontWeight: '700', color: '#1C1C1E', marginBottom: 4 },
+  alertToken: { color: '#8E8E93', fontWeight: '500' },
+  alertDistance: { fontSize: 13, color: '#1C1C1E', fontWeight: '500', opacity: 0.7 },
+  
+  actionSection: { paddingVertical: 20, alignItems: 'center' },
+  scanButton: { backgroundColor: '#007AFF', width: width - 48, paddingVertical: 20, borderRadius: 20, alignItems: 'center', shadowColor: '#007AFF', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
+  scanButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '800', letterSpacing: 1 },
 });
