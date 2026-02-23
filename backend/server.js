@@ -39,6 +39,10 @@ pinata.testAuthentication()
 // ----------------------------
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+// Adding '0.0.0.0' forces the server to listen on ALL network interfaces, not just localhost
+app.get('/api/health', (req, res) => {
+    res.json({ status: "Backend is running securely." });
+});
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT} (Listening on all interfaces)`);
 });
