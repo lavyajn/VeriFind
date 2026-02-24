@@ -1,19 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import QRCode from 'react-native-qrcode-svg'; // NEW QR IMPORT
+import QRCode from 'react-native-qrcode-svg';
 import { mintGenesisDevice } from '../utils/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function MintScreen({ navigation }) {
     const [make, setMake] = useState('');
     const [model, setModel] = useState('');
     const [serialNumber, setSerialNumber] = useState('');
-    const [ownerAddress, setOwnerAddress] = useState('0x70997970C51812dc3A010C7d01b50e0d17dc79C8'); 
+    
+    // 1. Change this to start completely blank!
+    const [ownerAddress, setOwnerAddress] = useState(''); 
+    
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(false);
-    
-    // NEW: State to hold the minted Token ID and show the QR code
     const [mintedTokenId, setMintedTokenId] = useState(null);
+
+    useEffect(() => {
+        const fetchWallet = async () => {
+            const savedWallet = await AsyncStorage.getItem('userWallet');
+            if (savedWallet) {
+                // Instantly fills the text box with YOUR actual wallet
+                setOwnerAddress(savedWallet); 
+            }
+        };
+        fetchWallet();
+    }, []);
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({

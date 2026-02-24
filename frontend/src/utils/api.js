@@ -35,12 +35,14 @@ export const reportItemRecovered = async (tokenId) => {
     }
 };
 
+// 🔥 Added a timestamp query so the phone NEVER caches this request!
 export const fetchMeshAlerts = async () => {
     try {
-        const response = await axios.get(`${BACKEND_URL}/alerts`);
+        const timestamp = new Date().getTime();
+        const response = await axios.get(`${BACKEND_URL}/alerts?t=${timestamp}`);
         return response.data;
     } catch (error) {
-        console.error("Error fetching alerts:", error);
+        console.error("Mesh Network Fetch Error:", error);
         return { success: false, alerts: [] };
     }
 };

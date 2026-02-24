@@ -3,7 +3,7 @@ const { ethers } = pkg;
 
 async function main() {
     // ⚠️ CRITICAL: Replace this with the NEW contract address from your deploy script!
-    const contractAddress = "0x95401dc811bb5740090279Ba06cfA8fcF6113778"; 
+    const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; 
     
     // Connect to your deployed contract
     const AssetGuard = await ethers.getContractAt("AssetGuard", contractAddress);

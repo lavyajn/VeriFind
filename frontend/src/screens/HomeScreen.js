@@ -12,23 +12,32 @@ export default function HomeScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
 
   // useFocusEffect triggers every time this screen becomes active
+// useFocusEffect triggers every time this screen becomes active
+// useFocusEffect triggers every time this screen becomes active
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
 
       const loadAlerts = async () => {
-        setLoading(true);
         const data = await fetchMeshAlerts();
         if (isActive && data.success) {
           setAlerts(data.alerts);
         }
-        if (isActive) setLoading(false);
+        if (isActive) setLoading(false); 
       };
 
+      // 1. Fetch immediately when the screen opens
       loadAlerts();
 
-      return () => { isActive = false; };
-    }, [])
+      // 2. Poll the database every 3 seconds
+      const intervalId = setInterval(loadAlerts, 3000);
+
+      // Clean up the timer when you leave the screen
+      return () => { 
+        isActive = false; 
+        clearInterval(intervalId); 
+      };
+    }, []) // 🚨 THIS MUST BE AN EMPTY ARRAY []
   );
 
   const renderAlert = ({ item }) => (
