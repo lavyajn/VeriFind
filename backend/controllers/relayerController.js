@@ -73,13 +73,24 @@ exports.checkStatus = async (req, res) => {
 
         const itemData = await contract.items(tokenId);
 
+        // 🔥 THE SECRET SAUCE: Ask the blockchain exactly who owns this token!
+        let ownerAddress = "Unknown";
+        if (itemData[3] === true) { // If isMinted is true
+            ownerAddress = await contract.ownerOf(tokenId);
+        }
+
         const statusEnum = itemData[1].toString();
         let readableStatus = "SECURE";
         if (statusEnum === "1") readableStatus = "LOST";
         if (statusEnum === "2") readableStatus = "STOLEN";
         if (statusEnum === "3") readableStatus = "RECOVERED";
 
-        res.json({ success: true, isMinted: itemData[3], status: readableStatus });
+        res.json({ 
+            success: true, 
+            isMinted: itemData[3], 
+            status: readableStatus,
+            ownerAddress: ownerAddress.toLowerCase() // Send the owner to the frontend!
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: "Failed to read blockchain" });
     }

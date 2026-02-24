@@ -2,6 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, FlatList, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { fetchMeshAlerts } from '../utils/api'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const { width } = Dimensions.get('window');
 
@@ -41,14 +43,26 @@ export default function HomeScreen({ navigation }) {
     </View>
   );
 
+  const handleLogout = async () => {
+  await AsyncStorage.removeItem('userWallet');
+  await AsyncStorage.removeItem('userName');
+  navigation.replace('AuthScreen');
+};
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         
-        {/* Header Section */}
+{/* Header Section */}
+{/* Header Section */}
         <View style={styles.header}>
           <Text style={styles.logoText}>Veri<Text style={styles.logoHighlight}>Find</Text></Text>
           <Text style={styles.tagline}>Decentralized Asset Protection</Text>
+          
+          {/* 🔥 SLEEK TOP-RIGHT LOGOUT ARROW */}
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton} activeOpacity={0.7}>
+            <Text style={styles.logoutArrow}>➔</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Network Stats Card */}
@@ -114,10 +128,14 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F2F2F7' },
   container: { flex: 1, paddingHorizontal: 24, paddingTop: 20, justifyContent: 'space-between' },
   
-  header: { marginTop: 20, alignItems: 'center' },
+  header: { marginTop: 20, alignItems: 'center', position: 'relative', width: '100%' },
   logoText: { fontSize: 42, fontWeight: '900', color: '#1C1C1E', letterSpacing: -1 },
   logoHighlight: { color: '#007AFF' },
   tagline: { fontSize: 14, color: '#8E8E93', marginTop: 5, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.5 },
+  
+  // NEW LOGOUT STYLES
+  logoutButton: { position: 'absolute', right: 0, top: 5, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#fcfcfc', borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.08, shadowRadius: 15, elevation: 5 },
+  logoutArrow: { color: '#007AFF', fontSize: 20, fontWeight: '900' },
   
   statsCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.08, shadowRadius: 15, elevation: 5, marginTop: 30 },
   statsTitle: { fontSize: 14, color: '#8E8E93', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 20 },

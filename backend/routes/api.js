@@ -13,6 +13,7 @@ const {
     pingLocation,
     reportLostGasless
 } = require('../controllers/relayerController');
+const { loginUser } = require('../controllers/authController');
 
 // Set up Multer (Temporarily stores the image before Pinata grabs it)
 const upload = multer({ dest: 'uploads/' });
@@ -48,5 +49,10 @@ router.get('/alerts', getActiveAlerts);
 router.post('/ping-location', pingLocation);
 
 router.post('/report-lost', reportLostGasless);
+
+// ==========================================
+// 👤 USER AUTHENTICATION
+// ==========================================
+router.post('/login', loginUser);
 
 module.exports = router;

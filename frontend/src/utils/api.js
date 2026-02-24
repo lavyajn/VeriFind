@@ -85,3 +85,13 @@ export const reportItemLost = async (tokenId) => {
         return { success: false, error: error.response?.data?.error || "Network error" };
     }
 };
+
+export const loginUser = async (name, email, walletAddress) => {
+    try {
+        const response = await axios.post(`${BACKEND_URL}/login`, { name, email, walletAddress });
+        return response.data;
+    } catch (error) {
+        console.error("Login Error:", error);
+        return { success: false, error: "Failed to authenticate." };
+    }
+};
