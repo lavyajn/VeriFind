@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Vibration } from 'react-native';
-import * as Location from 'expo-location'; // NEW GPS IMPORT
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Vibration, TextInput, KeyboardAvoidingView, Platform, ScrollView, Keyboard } from 'react-native';
+import * as Location from 'expo-location'; 
 import { reportItemStolen, checkDeviceStatus, reportItemRecovered, transferAssetOwner, pingDeviceLocation } from '../utils/api';
 
 export default function DeviceDetails({ route, navigation }) {
@@ -10,6 +10,24 @@ export default function DeviceDetails({ route, navigation }) {
   const [fetchingStatus, setFetchingStatus] = useState(true);
   const [status, setStatus] = useState('LOADING...'); 
   const [isMinted, setIsMinted] = useState(true);
+  const [showTransferInput, setShowTransferInput] = useState(false);
+  const [buyerAddress, setBuyerAddress] = useState('');
+
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => {
+      setKeyboardOffset(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => {
+      setKeyboardOffset(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const cleanString = String(scannedData).replace(/[^0-9]/g, '');
   const tokenId = cleanString !== '' ? parseInt(cleanString) : 0; 
@@ -103,25 +121,27 @@ export default function DeviceDetails({ route, navigation }) {
     );
   };
 
-  // NEW: The Black Market Block
-  const handleTransfer = async () => {
-    // Hardcoded Hardhat Account #1 for the hackathon demo
-    const dummyBuyer = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"; 
-    
+const handleTransfer = async () => {
+    if (buyerAddress.length !== 42 || !buyerAddress.startsWith('0x')) {
+      Alert.alert("Invalid Address", "Please enter a valid Web3 wallet address starting with 0x.");
+      return;
+    }
+
     Alert.alert(
       "💸 SECONDARY MARKET",
-      `Transfer cryptographic ownership of this asset to Buyer Wallet:\n\n${dummyBuyer.substring(0,8)}...${dummyBuyer.slice(-6)}?`,
+      `Transfer cryptographic ownership of this asset to:\n\n${buyerAddress}?`,
       [
         { text: "Cancel", style: "cancel" },
         { 
           text: "CONFIRM SALE", 
           onPress: async () => {
             setLoading(true);
-            const result = await transferAssetOwner(tokenId, dummyBuyer);
+            const result = await transferAssetOwner(tokenId, buyerAddress);
             if (result.success) {
               Alert.alert("✅ Transfer Complete", "Asset ownership updated on the blockchain.");
+              setShowTransferInput(false); // Hide the input after success
+              setBuyerAddress(''); // Clear the input
             } else {
-              // THIS IS THE MONEY SHOT: The smart contract violently rejects the transaction!
               Alert.alert("❌ BLOCKCHAIN REJECTED", result.error);
             }
             setLoading(false);
@@ -141,77 +161,107 @@ export default function DeviceDetails({ route, navigation }) {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Asset Dashboard</Text>
-        <Text style={styles.subtitle}>Decentralized Verification</Text>
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.row}>
-          <Text style={styles.label}>Token ID</Text>
-          <Text style={styles.value}>#{tokenId}</Text>
+    <KeyboardAvoidingView 
+      style={{ flex: 1, backgroundColor: '#F2F2F7' }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled" // This cleanly dismisses the keyboard if you tap outside!
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Asset Dashboard</Text>
+          <Text style={styles.subtitle}>Decentralized Verification</Text>
         </View>
-        <View style={styles.divider} />
-        <View style={styles.row}>
-          <Text style={styles.label}>Network Status</Text>
-          <View style={[
-            styles.badge, 
-            !isMinted ? { backgroundColor: '#E5E5EA' } : 
-            status === 'STOLEN' ? styles.badgeStolen : 
-            status === 'RECOVERED' ? { backgroundColor: '#E5F0FF' } : 
-            styles.badgeSecure 
-          ]}>
-            <Text style={[
-              styles.badgeText, 
-              { color: !isMinted ? '#8E8E93' : 
-                       status === 'STOLEN' ? '#FF3B30' : 
-                       status === 'RECOVERED' ? '#007AFF' : 
-                       '#34C759' }
+
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.label}>Token ID</Text>
+            <Text style={styles.value}>#{tokenId}</Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.row}>
+            <Text style={styles.label}>Network Status</Text>
+            <View style={[
+              styles.badge, 
+              !isMinted ? { backgroundColor: '#E5E5EA' } : 
+              status === 'STOLEN' ? styles.badgeStolen : 
+              status === 'RECOVERED' ? { backgroundColor: '#E5F0FF' } : 
+              styles.badgeSecure 
             ]}>
-              {!isMinted ? 'INVALID' : status}
-            </Text>
+              <Text style={[
+                styles.badgeText, 
+                { color: !isMinted ? '#8E8E93' : 
+                         status === 'STOLEN' ? '#FF3B30' : 
+                         status === 'RECOVERED' ? '#007AFF' : 
+                         '#34C759' }
+              ]}>
+                {!isMinted ? 'INVALID' : status}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.actionContainer}>
-        {!isMinted ? (
-           <Text style={styles.lockedText}>⚠️ UNREGISTERED DEVICE</Text>
-        ) : loading ? (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color={status === 'STOLEN' ? "#007AFF" : "#ff3b30"} />
-            <Text style={styles.loadingText}>Verifying Cryptographic Signature...</Text>
-          </View>
-        ) : (
-          <>
-            {/* STOLEN STATE UI */}
-            {status === 'STOLEN' ? (
-              <View style={{ marginBottom: 20 }}>
-                <Text style={styles.lockedText}>🔒 DEVICE LOCKED BY OWNER</Text>
-                <Text style={styles.subtext}>This asset has been reported stolen on the blockchain.</Text>
-                <TouchableOpacity style={styles.foundButton} onPress={handleNotifyOwner} activeOpacity={0.8}>
-                   <Text style={styles.foundButtonText}>📍 NOTIFY OWNER FOUND</Text>
+        <View style={styles.actionContainer}>
+          {!isMinted ? (
+             <Text style={styles.lockedText}>⚠️ UNREGISTERED DEVICE</Text>
+          ) : loading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator size="large" color={status === 'STOLEN' ? "#007AFF" : "#ff3b30"} />
+              <Text style={styles.loadingText}>Verifying Cryptographic Signature...</Text>
+            </View>
+          ) : (
+            <>
+              {/* STOLEN STATE UI */}
+              {status === 'STOLEN' ? (
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={styles.lockedText}>🔒 DEVICE LOCKED BY OWNER</Text>
+                  <Text style={styles.subtext}>This asset has been reported stolen on the blockchain.</Text>
+                  <TouchableOpacity style={styles.foundButton} onPress={handleNotifyOwner} activeOpacity={0.8}>
+                     <Text style={styles.foundButtonText}>📍 NOTIFY OWNER FOUND</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.foundButton, { backgroundColor: '#007AFF', marginTop: 15 }]} onPress={handleRecovered} activeOpacity={0.8}>
+                     <Text style={styles.foundButtonText}>🔓 I AM THE OWNER (UNLOCK)</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                /* SECURE STATE UI */
+                <TouchableOpacity style={styles.panicButton} onPress={handleReportStolen} activeOpacity={0.8}>
+                  <Text style={styles.panicText}>🚨 REPORT STOLEN</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.foundButton, { backgroundColor: '#007AFF', marginTop: 15 }]} onPress={handleRecovered} activeOpacity={0.8}>
-                   <Text style={styles.foundButtonText}>🔓 I AM THE OWNER (UNLOCK)</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              /* SECURE STATE UI */
-              <TouchableOpacity style={styles.panicButton} onPress={handleReportStolen} activeOpacity={0.8}>
-                <Text style={styles.panicText}>🚨 REPORT STOLEN</Text>
-              </TouchableOpacity>
-            )}
+              )}
 
-            {/* THE BLACK MARKET BLOCK BUTTON (Always visible for demo purposes) */}
-            <TouchableOpacity style={styles.transferButton} onPress={handleTransfer} activeOpacity={0.8}>
-               <Text style={styles.transferText}>💸 SELL / TRANSFER ASSET</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </View>
+              {/* DYNAMIC SECONDARY MARKET BLOCK */}
+              {showTransferInput ? (
+                <View style={styles.transferBox}>
+                  <TextInput 
+                    style={styles.addressInput}
+                    placeholder="Enter Buyer's Wallet Address (0x...)"
+                    placeholderTextColor="#8E8E93"
+                    value={buyerAddress}
+                    onChangeText={setBuyerAddress}
+                    autoCapitalize="none"
+                  />
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <TouchableOpacity style={[styles.transferButton, { flex: 1, marginRight: 10, backgroundColor: '#E5E5EA', borderWidth: 0 }]} onPress={() => setShowTransferInput(false)}>
+                      <Text style={[styles.transferText, { color: '#FF3B30' }]}>CANCEL</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.transferButton, { flex: 1, backgroundColor: '#007AFF', borderWidth: 0 }]} onPress={handleTransfer}>
+                      <Text style={[styles.transferText, { color: '#FFF' }]}>CONFIRM</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.transferButton} onPress={() => setShowTransferInput(true)} activeOpacity={0.8}>
+                   <Text style={styles.transferText}>💸 SELL / TRANSFER ASSET</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -242,4 +292,9 @@ const styles = StyleSheet.create({
   // NEW TRANSFER BUTTON STYLES
   transferButton: { backgroundColor: '#E5E5EA', paddingVertical: 18, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#D1D1D6' },
   transferText: { color: '#1C1C1E', fontSize: 16, fontWeight: '800', letterSpacing: 1 },
+  transferBox: { backgroundColor: '#FFFFFF', padding: 15, borderRadius: 16, borderWidth: 1, borderColor: '#D1D1D6' },
+  addressInput: { backgroundColor: '#F2F2F7', padding: 15, borderRadius: 10, fontSize: 14, marginBottom: 15, color: '#1C1C1E', fontWeight: '500' },
+  // REMOVE THIS: container: { flex: 1, backgroundColor: '#F2F2F7', padding: 20 },
+  // ADD THIS:
+  scrollContainer: { flexGrow: 1, padding: 20, justifyContent: 'space-between', paddingBottom: 40 },
 });

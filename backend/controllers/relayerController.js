@@ -34,16 +34,19 @@ exports.reportStolenGasless = async (req, res) => {
         // Wait for the blockchain to officially mine the block
         const receipt = await tx.wait();
         // NEW: Broadcast to Mesh Network
-     const exists = activeMeshAlerts.find(a => a.id === tokenId.toString());
-     if (!exists) {
-         activeMeshAlerts.unshift({
-             id: tokenId.toString(),
-             token: '#' + tokenId,
-             model: 'VeriFind Protected Asset', // You can pull real data from IPFS later
-             time: 'Just now',
-             distance: '0.2 miles away'
-         });
-     }
+        const exists = activeMeshAlerts.find(a => a.id === tokenId.toString());
+        if (!exists) {
+            // Get the current local time (e.g., "1:01 PM")
+            const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            activeMeshAlerts.unshift({
+                id: tokenId.toString(),
+                token: '#' + tokenId,
+                model: 'VeriFind Protected Asset', 
+                time: currentTime,
+                distance: '0.2 miles away'
+            });
+        }
 
         res.status(200).json({
             success: true,
