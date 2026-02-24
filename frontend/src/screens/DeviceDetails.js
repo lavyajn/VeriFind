@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Vibration } from 'react-native';
-import { reportItemStolen, checkDeviceStatus, reportItemRecovered } from '../utils/api';
+import * as Location from 'expo-location'; // NEW GPS IMPORT
+import { reportItemStolen, checkDeviceStatus, reportItemRecovered, transferAssetOwner, pingDeviceLocation } from '../utils/api';
 
 export default function DeviceDetails({ route, navigation }) {
   const { scannedData } = route.params; 
@@ -13,7 +14,6 @@ export default function DeviceDetails({ route, navigation }) {
   const cleanString = String(scannedData).replace(/[^0-9]/g, '');
   const tokenId = cleanString !== '' ? parseInt(cleanString) : 0; 
 
-  // THE CURE: Fetch the true status when the screen opens!
   useEffect(() => {
     const fetchStatus = async () => {
       const data = await checkDeviceStatus(tokenId);
@@ -29,11 +29,6 @@ export default function DeviceDetails({ route, navigation }) {
   }, [tokenId]);
 
   const handleReportStolen = async () => {
-    if (!isMinted) {
-        Alert.alert("❌ Invalid Device", "This token ID does not exist on the blockchain.");
-        return;
-    }
-
     Alert.alert(
       "🚨 SECURE LOCKDOWN",
       "Flag this asset as STOLEN on the blockchain? This action is irreversible.",
@@ -44,17 +39,13 @@ export default function DeviceDetails({ route, navigation }) {
           style: "destructive",
           onPress: async () => {
             setLoading(true);
-            try {
-              const result = await reportItemStolen(tokenId);
-              if (result.success) {
-                Vibration.vibrate([0, 500, 200, 500]); 
-                setStatus('STOLEN'); 
-                Alert.alert("✅ Transaction Confirmed", "Asset locked on-chain.");
-              } else {
-                 Alert.alert("❌ Error", result.error || "Transaction failed.");
-              }
-            } catch (error) {
-              Alert.alert("Network Error", "Failed to contact the relayer node.");
+            const result = await reportItemStolen(tokenId);
+            if (result.success) {
+              Vibration.vibrate([0, 500, 200, 500]); 
+              setStatus('STOLEN'); 
+              Alert.alert("✅ Transaction Confirmed", "Asset locked on-chain.");
+            } else {
+               Alert.alert("❌ Error", result.error || "Transaction failed.");
             }
             setLoading(false);
           }
@@ -63,10 +54,26 @@ export default function DeviceDetails({ route, navigation }) {
     );
   };
 
-  const handleNotifyOwner = () => {
+  // NEW: Hardware GPS Integration
+  const handleNotifyOwner = async () => {
+    Alert.alert("📍 Accessing Satellite...", "Fetching secure hardware GPS coordinates...");
+    
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert("Permission Denied", "Cannot access hardware location.");
+      return;
+    }
+
+    let location = await Location.getCurrentPositionAsync({});
+    const lat = location.coords.latitude;
+    const lon = location.coords.longitude;
+
+    // Ping the backend Mesh Network with live coordinates!
+    await pingDeviceLocation(tokenId, lat, lon);
+
     Alert.alert(
-      "📍 Location Shared", 
-      "The owner has been securely notified of this device's current location via the VeriFind network.",
+      "📍 Location Secured & Shared", 
+      `The owner has been notified via the Mesh Network.\n\nCoordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`,
       [{ text: "Done", style: "default" }]
     );
   };
@@ -74,24 +81,48 @@ export default function DeviceDetails({ route, navigation }) {
   const handleRecovered = async () => {
     Alert.alert(
       "🔓 UNLOCK ASSET",
-      "Are you the owner? This will restore the asset to a SECURE state on the blockchain.",
+      "Are you the owner? Restore the asset to a SECURE state.",
       [
         { text: "Cancel", style: "cancel" },
         { 
           text: "CONFIRM RECOVERY", 
           onPress: async () => {
             setLoading(true);
-            try {
-              const result = await reportItemRecovered(tokenId);
-              if (result.success) {
-                Vibration.vibrate([0, 250, 250, 250]); // Happy vibration pattern!
-                setStatus('RECOVERED'); 
-                Alert.alert("✅ Asset Unlocked", "The blockchain has been updated.");
-              } else {
-                 Alert.alert("❌ Error", result.error || "Transaction failed.");
-              }
-            } catch (error) {
-              Alert.alert("Network Error", "Failed to contact the relayer node.");
+            const result = await reportItemRecovered(tokenId);
+            if (result.success) {
+              Vibration.vibrate([0, 250, 250, 250]);
+              setStatus('RECOVERED'); 
+              Alert.alert("✅ Asset Unlocked", "The blockchain has been updated.");
+            } else {
+               Alert.alert("❌ Error", result.error || "Transaction failed.");
+            }
+            setLoading(false);
+          }
+        }
+      ]
+    );
+  };
+
+  // NEW: The Black Market Block
+  const handleTransfer = async () => {
+    // Hardcoded Hardhat Account #1 for the hackathon demo
+    const dummyBuyer = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"; 
+    
+    Alert.alert(
+      "💸 SECONDARY MARKET",
+      `Transfer cryptographic ownership of this asset to Buyer Wallet:\n\n${dummyBuyer.substring(0,8)}...${dummyBuyer.slice(-6)}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "CONFIRM SALE", 
+          onPress: async () => {
+            setLoading(true);
+            const result = await transferAssetOwner(tokenId, dummyBuyer);
+            if (result.success) {
+              Alert.alert("✅ Transfer Complete", "Asset ownership updated on the blockchain.");
+            } else {
+              // THIS IS THE MONEY SHOT: The smart contract violently rejects the transaction!
+              Alert.alert("❌ BLOCKCHAIN REJECTED", result.error);
             }
             setLoading(false);
           }
@@ -122,21 +153,20 @@ export default function DeviceDetails({ route, navigation }) {
           <Text style={styles.value}>#{tokenId}</Text>
         </View>
         <View style={styles.divider} />
-        {/* NETWORK STATUS BADGE */}
         <View style={styles.row}>
           <Text style={styles.label}>Network Status</Text>
           <View style={[
             styles.badge, 
             !isMinted ? { backgroundColor: '#E5E5EA' } : 
             status === 'STOLEN' ? styles.badgeStolen : 
-            status === 'RECOVERED' ? { backgroundColor: '#E5F0FF' } : // Blue bg
+            status === 'RECOVERED' ? { backgroundColor: '#E5F0FF' } : 
             styles.badgeSecure 
           ]}>
             <Text style={[
               styles.badgeText, 
               { color: !isMinted ? '#8E8E93' : 
                        status === 'STOLEN' ? '#FF3B30' : 
-                       status === 'RECOVERED' ? '#007AFF' : // Blue text
+                       status === 'RECOVERED' ? '#007AFF' : 
                        '#34C759' }
             ]}>
               {!isMinted ? 'INVALID' : status}
@@ -145,7 +175,6 @@ export default function DeviceDetails({ route, navigation }) {
         </View>
       </View>
 
-      {/* ACTION BUTTONS */}
       <View style={styles.actionContainer}>
         {!isMinted ? (
            <Text style={styles.lockedText}>⚠️ UNREGISTERED DEVICE</Text>
@@ -154,25 +183,32 @@ export default function DeviceDetails({ route, navigation }) {
             <ActivityIndicator size="large" color={status === 'STOLEN' ? "#007AFF" : "#ff3b30"} />
             <Text style={styles.loadingText}>Verifying Cryptographic Signature...</Text>
           </View>
-        ) : status === 'STOLEN' ? (
-           <View>
-             <Text style={styles.lockedText}>🔒 DEVICE LOCKED BY OWNER</Text>
-             <Text style={styles.subtext}>This asset has been reported stolen on the blockchain.</Text>
-             
-             {/* Samaritan Button */}
-             <TouchableOpacity style={styles.foundButton} onPress={handleNotifyOwner} activeOpacity={0.8}>
-                <Text style={styles.foundButtonText}>📍 NOTIFY OWNER FOUND</Text>
-             </TouchableOpacity>
-
-             {/* Owner Unlock Button */}
-             <TouchableOpacity style={[styles.foundButton, { backgroundColor: '#007AFF', marginTop: 15 }]} onPress={handleRecovered} activeOpacity={0.8}>
-                <Text style={styles.foundButtonText}>🔓 I AM THE OWNER (UNLOCK)</Text>
-             </TouchableOpacity>
-           </View>
         ) : (
-          <TouchableOpacity style={styles.panicButton} onPress={handleReportStolen} activeOpacity={0.8}>
-            <Text style={styles.panicText}>🚨 REPORT STOLEN</Text>
-          </TouchableOpacity>
+          <>
+            {/* STOLEN STATE UI */}
+            {status === 'STOLEN' ? (
+              <View style={{ marginBottom: 20 }}>
+                <Text style={styles.lockedText}>🔒 DEVICE LOCKED BY OWNER</Text>
+                <Text style={styles.subtext}>This asset has been reported stolen on the blockchain.</Text>
+                <TouchableOpacity style={styles.foundButton} onPress={handleNotifyOwner} activeOpacity={0.8}>
+                   <Text style={styles.foundButtonText}>📍 NOTIFY OWNER FOUND</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.foundButton, { backgroundColor: '#007AFF', marginTop: 15 }]} onPress={handleRecovered} activeOpacity={0.8}>
+                   <Text style={styles.foundButtonText}>🔓 I AM THE OWNER (UNLOCK)</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              /* SECURE STATE UI */
+              <TouchableOpacity style={styles.panicButton} onPress={handleReportStolen} activeOpacity={0.8}>
+                <Text style={styles.panicText}>🚨 REPORT STOLEN</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* THE BLACK MARKET BLOCK BUTTON (Always visible for demo purposes) */}
+            <TouchableOpacity style={styles.transferButton} onPress={handleTransfer} activeOpacity={0.8}>
+               <Text style={styles.transferText}>💸 SELL / TRANSFER ASSET</Text>
+            </TouchableOpacity>
+          </>
         )}
       </View>
     </View>
@@ -194,7 +230,7 @@ const styles = StyleSheet.create({
   badgeStolen: { backgroundColor: '#FFEBEA' },
   badgeText: { fontWeight: '800', fontSize: 14 },
   actionContainer: { flex: 1, justifyContent: 'flex-end', paddingBottom: 30 },
-  panicButton: { backgroundColor: '#FF3B30', paddingVertical: 18, borderRadius: 16, alignItems: 'center', shadowColor: '#FF3B30', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  panicButton: { backgroundColor: '#FF3B30', paddingVertical: 18, borderRadius: 16, alignItems: 'center', shadowColor: '#FF3B30', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5, marginBottom: 15 },
   panicText: { color: '#FFFFFF', fontSize: 18, fontWeight: '800', letterSpacing: 1 },
   loadingBox: { alignItems: 'center', padding: 20 },
   loadingText: { marginTop: 15, color: '#8E8E93', fontSize: 16, fontWeight: '600' },
@@ -202,4 +238,8 @@ const styles = StyleSheet.create({
   subtext: { textAlign: 'center', color: '#8E8E93', fontSize: 14, marginTop: 8, marginBottom: 20 },
   foundButton: { backgroundColor: '#1C1C1E', paddingVertical: 18, borderRadius: 16, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
   foundButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 1 },
+  
+  // NEW TRANSFER BUTTON STYLES
+  transferButton: { backgroundColor: '#E5E5EA', paddingVertical: 18, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#D1D1D6' },
+  transferText: { color: '#1C1C1E', fontSize: 16, fontWeight: '800', letterSpacing: 1 },
 });

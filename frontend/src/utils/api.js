@@ -44,3 +44,21 @@ export const fetchMeshAlerts = async () => {
         return { success: false, alerts: [] };
     }
 };
+
+export const transferAssetOwner = async (tokenId, newOwner) => {
+    try {
+        const response = await axios.post(`${BACKEND_URL}/transfer`, { tokenId, newOwner });
+        return response.data;
+    } catch (error) {
+        // We want the exact Smart Contract rejection message!
+        return { success: false, error: error.response?.data?.error || "Transfer failed" };
+    }
+};
+
+export const pingDeviceLocation = async (tokenId, lat, lon) => {
+    try {
+        await axios.post(`${BACKEND_URL}/ping-location`, { tokenId, lat, lon });
+    } catch (error) {
+        console.error("Failed to ping location");
+    }
+};

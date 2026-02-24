@@ -114,3 +114,35 @@ exports.markRecovered = async (req, res) => {
 exports.getActiveAlerts = (req, res) => {
     res.json({ success: true, alerts: activeMeshAlerts });
 };
+
+// NEW: Transfer Ownership (Secondary Market)
+exports.transferAsset = async (req, res) => {
+    try {
+        const { tokenId, newOwner } = req.body;
+        const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+        const wallet = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
+        const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, wallet);
+
+        console.log(`Attempting to transfer Token ID ${tokenId} to ${newOwner}...`);
+        const tx = await contract.transferAsset(newOwner, tokenId);
+        await tx.wait();
+
+        res.json({ success: true, txHash: tx.hash });
+    } catch (error) {
+        console.error("Transfer Error:", error);
+        // We want to pass the exact blockchain rejection message to the frontend!
+        res.status(500).json({ success: false, error: error.reason || "Transfer blocked by smart contract." });
+    }
+};
+
+// NEW: Live GPS Geotagging for Mesh Network
+exports.pingLocation = (req, res) => {
+    const { tokenId, lat, lon } = req.body;
+    
+    // Find the alert in our live memory and update its GPS location
+    const alert = activeMeshAlerts.find(a => a.id === tokenId.toString());
+    if (alert) {
+        alert.distance = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+    }
+    res.json({ success: true });
+};

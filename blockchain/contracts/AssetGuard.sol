@@ -67,7 +67,17 @@ contract AssetGuard is ERC721, ERC721URIStorage, Ownable {
         emit ItemReported(tokenId, Status.RECOVERED);
     }
 
-    // 4. THE THEFT-BLOCK (Protects against resale)
+    // 4. SECONDARY MARKET (Anti-Theft Transfer)
+    function transferAsset(address to, uint256 tokenId) public {
+        require(items[tokenId].isMinted == true, "Device does not exist");
+        require(items[tokenId].status != Status.STOLEN, "CRITICAL: Cannot transfer a stolen asset. Network lock active!");
+        require(msg.sender == ownerOf(tokenId) || approvedRelayers[msg.sender], "Not authorized");
+
+        // OpenZeppelin's built-in secure transfer logic
+        _transfer(ownerOf(tokenId), to, tokenId);
+    }
+
+    // 5. THE THEFT-BLOCK (Protects against resale)
     function _update(address to, uint256 tokenId, address auth) internal override(ERC721) returns (address) {
         address from = _ownerOf(tokenId);
         if (from != address(0)) {
