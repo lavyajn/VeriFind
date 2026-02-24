@@ -62,3 +62,26 @@ export const pingDeviceLocation = async (tokenId, lat, lon) => {
         console.error("Failed to ping location");
     }
 };
+
+export const mintGenesisDevice = async (formData) => {
+    try {
+        const response = await axios.post(`${BACKEND_URL}/mint-device`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Minting Error:", error);
+        return { success: false, error: error.response?.data?.error || "Failed to mint device" };
+    }
+};
+
+export const reportItemLost = async (tokenId) => {
+    try {
+        const response = await axios.post(`${BACKEND_URL}/report-lost`, { tokenId });
+        return response.data;
+    } catch (error) {
+        return { success: false, error: error.response?.data?.error || "Network error" };
+    }
+};

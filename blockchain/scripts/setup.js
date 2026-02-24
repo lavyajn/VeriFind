@@ -2,23 +2,29 @@ import pkg from 'hardhat';
 const { ethers } = pkg;
 
 async function main() {
-    const contractAddress = "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f";
+    // ⚠️ CRITICAL: Replace this with the NEW contract address from your deploy script!
+    const contractAddress = "0x95401dc811bb5740090279Ba06cfA8fcF6113778"; 
     
     // Connect to your deployed contract
     const AssetGuard = await ethers.getContractAt("AssetGuard", contractAddress);
     
-    // Get the default Hardhat wallet
-    const [owner] = await ethers.getSigners();
-
-    console.log("Minting Token 0...");
-    const mintTx = await AssetGuard.manufacturerMint(owner.address, "SN-123", "ipfs://test");
-    await mintTx.wait();
-    console.log("✅ Token 0 successfully minted to:", owner.address);
+    // Get the default Hardhat wallets (Account 0 is Relayer/Owner, Account 1 is Buyer)
+    const [owner, buyer] = await ethers.getSigners();
 
     console.log("Authorizing Backend Relayer...");
     const authTx = await AssetGuard.addRelayer(owner.address);
     await authTx.wait();
     console.log("✅ Relayer authorized!");
+
+    console.log("Minting Token 0...");
+    // Minting to the Owner with a serial number and a mock IPFS link
+    const mintTx = await AssetGuard.manufacturerMint(
+        owner.address, 
+        "SN-12345", 
+        "ipfs://QmMockGenesisHash12345"
+    );
+    await mintTx.wait();
+    console.log("✅ Token 0 successfully minted to:", owner.address);
 }
 
 main().catch((error) => {

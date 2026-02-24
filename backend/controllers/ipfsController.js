@@ -1,68 +1,98 @@
 const pinataSDK = require('@pinata/sdk');
 const fs = require('fs');
+const { ethers } = require('ethers');
 const Item = require('../models/Item');
+const contractABI = require('../../blockchain/config/contractABI.json'); 
 
-// Initialize Pinata here so the controller has access to it
+// Initialize Pinata using your exact env variables
 const pinata = new pinataSDK({
     pinataApiKey: process.env.PINATA_API_KEY,
     pinataSecretApiKey: process.env.PINATA_API_SECRET
 });
 
-exports.uploadImageAndSave = async (req, res) => {
+exports.mintGenesisDevice = async (req, res) => {
     try {
-        // 1. Check if a file was actually uploaded
+        // 1. Validation
         if (!req.file) {
-            return res.status(400).json({ success: false, error: 'No file provided' });
+            return res.status(400).json({ success: false, error: 'Device image is required' });
         }
 
-        const { tokenId, serialNumber } = req.body;
-        if (!tokenId || !serialNumber) {
-            // If they forgot the text data, delete the uploaded temp file and throw an error
+        const { ownerAddress, serialNumber, make, model } = req.body;
+        if (!ownerAddress || !serialNumber || !make || !model) {
             fs.unlinkSync(req.file.path);
-            return res.status(400).json({ success: false, error: 'Token ID and Serial Number are required' });
+            return res.status(400).json({ success: false, error: 'Missing device details or owner address' });
         }
 
-        // 2. Read the file from the temporary uploads folder
-        const readableStreamForFile = fs.createReadStream(req.file.path);
+        console.log(`[1/4] Uploading ${make} ${model} image to IPFS...`);
         
-        const options = {
-            pinataMetadata: {
-                name: `AssetGuard_Item_${tokenId}`,
-            },
-            pinataOptions: {
-                cidVersion: 0
-            }
+        // 2. Upload Image to IPFS (Your original logic)
+        const readableStreamForFile = fs.createReadStream(req.file.path);
+        const imageResponse = await pinata.pinFileToIPFS(readableStreamForFile, {
+            pinataMetadata: { name: `VeriFind_Img_${serialNumber}` }
+        });
+        const imageURI = `ipfs://${imageResponse.IpfsHash}`;
+
+        console.log(`[2/4] Image Pinned! Creating Metadata JSON...`);
+
+        // 3. Create & Upload standard ERC-721 Metadata JSON
+        const metadata = {
+            name: `${make} ${model}`,
+            description: "VeriFind Authenticated Asset",
+            image: imageURI, // Linking the image we just uploaded!
+            attributes: [
+                { trait_type: "Make", value: make },
+                { trait_type: "Model", value: model },
+                { trait_type: "SerialNumber", value: serialNumber }
+            ]
         };
 
-        // 3. Send to IPFS via Pinata
-        const pinataResponse = await pinata.pinFileToIPFS(readableStreamForFile, options);
-        const ipfsHash = pinataResponse.IpfsHash;
-
-        // 4. Save the reference in MongoDB
-        const newItem = new Item({
-            tokenId: parseInt(tokenId),
-            serialNumber: serialNumber,
-            ipfsImageHash: ipfsHash
+        const jsonResponse = await pinata.pinJSONToIPFS(metadata, {
+            pinataMetadata: { name: `VeriFind_Meta_${serialNumber}.json` }
         });
+        const tokenURI = `ipfs://${jsonResponse.IpfsHash}`;
 
-        const savedItem = await newItem.save();
+        console.log(`[3/4] Metadata Pinned at ${tokenURI}. Minting on Blockchain...`);
 
-        // 5. Clean up! Delete the file from our local server memory
+        // 4. Trigger Smart Contract Minting via Relayer
+        const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+        const wallet = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
+        const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, wallet);
+
+        const tx = await contract.manufacturerMint(ownerAddress, serialNumber, tokenURI);
+        const receipt = await tx.wait();
+
+        // 🔥 THE FIX: Ask the blockchain which Token ID it just assigned to this Serial Number!
+        const mintedTokenId = await contract.serialToTokenId(serialNumber);
+
+        console.log(`[4/4] Minted Token #${mintedTokenId}! Saving reference to MongoDB...`);
+
+        // 5. Save reference to MongoDB
+        const newItem = new Item({
+            tokenId: Number(mintedTokenId), // <-- Now MongoDB is happy!
+            serialNumber: serialNumber,
+            ipfsImageHash: imageResponse.IpfsHash,
+            make: make,
+            model: model 
+        });
+        await newItem.save();
+
+        // 6. Clean up temp server file
         fs.unlinkSync(req.file.path);
 
+        // Send the mintedTokenId back to the frontend so we can generate the QR code!
         res.status(201).json({
             success: true,
-            message: "File successfully pinned to IPFS and saved to DB!",
-            ipfsUrl: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
-            data: savedItem
+            message: "Device successfully minted, pinned, and secured!",
+            tokenURI: tokenURI,
+            txHash: receipt.hash,
+            tokenId: Number(mintedTokenId) 
         });
 
     } catch (error) {
-        console.error("IPFS Upload Error:", error);
-        // If it fails, try to clean up the temp file anyway
+        console.error("Genesis Mint Error:", error);
         if (req.file && fs.existsSync(req.file.path)) {
             fs.unlinkSync(req.file.path);
         }
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: error.reason || error.message || "Minting failed" });
     }
 };

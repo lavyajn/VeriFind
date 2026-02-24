@@ -1,98 +1,50 @@
-const { ethers } = require('ethers');
 const Item = require('../models/Item');
-
-// Load the ABI. Adjust the path if you saved it somewhere else!
+const { ethers } = require('ethers');
 const contractABI = require('../../blockchain/config/contractABI.json'); 
-// In-memory database for live Mesh Network alerts
-let activeMeshAlerts = [];
 
+// 🚨 REPORT STOLEN
 exports.reportStolenGasless = async (req, res) => {
     try {
         const { tokenId } = req.body;
+        if (tokenId === undefined) return res.status(400).json({ success: false, error: 'Token ID is required' });
 
-        if (tokenId === undefined) {
-            return res.status(400).json({ success: false, error: 'Token ID is required' });
-        }
-
-        // 1. Set up the connection to Polygon Amoy
         const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-        
-        // 2. Boot up the Server's Wallet using the Private Key
-        const relayerWallet = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
-        
-        // 3. Connect to the Smart Contract
-        const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, relayerWallet);
+        const wallet = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
+        const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, wallet);
 
-        console.log(`Relayer preparing to flag Token ID: ${tokenId} as stolen...`);
-
-        // 4. Send the Transaction to the Blockchain
-        // Because we are using the relayerWallet, the server pays the gas!
         const tx = await contract.reportStolen(tokenId);
-        
-        console.log(`Transaction sent! Waiting for confirmation... Hash: ${tx.hash}`);
-        
-        // Wait for the blockchain to officially mine the block
         const receipt = await tx.wait();
-        // NEW: Broadcast to Mesh Network
-        const exists = activeMeshAlerts.find(a => a.id === tokenId.toString());
-        if (!exists) {
-            // Get the current local time (e.g., "1:01 PM")
-            const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            activeMeshAlerts.unshift({
-                id: tokenId.toString(),
-                token: '#' + tokenId,
-                model: 'VeriFind Protected Asset', 
-                time: currentTime,
-                distance: '0.2 miles away'
-            });
-        }
 
-        res.status(200).json({
-            success: true,
-            message: "Item successfully flagged as STOLEN on the blockchain!",
-            txHash: receipt.hash
-        });
+        await Item.findOneAndUpdate({ tokenId: Number(tokenId) }, { status: 'STOLEN', statusUpdatedAt: new Date() });
 
+        res.status(200).json({ success: true, txHash: receipt.hash });
     } catch (error) {
-        console.error("Relayer Transaction Failed:", error);
-        
-        // Catch common smart contract errors (like "Not authorized")
-        let errorMessage = error.reason || error.message;
-        res.status(500).json({ success: false, error: errorMessage });
+        res.status(500).json({ success: false, error: error.reason || error.message });
     }
 };
 
-// NEW: Check the true status of a device on the blockchain
-exports.checkStatus = async (req, res) => {
+// ⚠️ REPORT LOST
+exports.reportLostGasless = async (req, res) => {
     try {
-        const tokenId = req.params.id;
-        
-        // We only need a provider to read data (no wallet/gas required)
+        const { tokenId } = req.body;
+        if (tokenId === undefined) return res.status(400).json({ success: false, error: 'Token ID is required' });
+
         const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-        const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, provider);
+        const wallet = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
+        const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, wallet);
 
-        // Fetch the struct from the blockchain
-        const itemData = await contract.items(tokenId);
-        
-        // Translate the Solidity Enum (0 = SECURE, 1 = STOLEN, 2 = RECOVERED)
-        const statusEnum = itemData[1].toString();
-        let readableStatus = "SECURE";
-        if (statusEnum === "1") readableStatus = "STOLEN";
-        if (statusEnum === "2") readableStatus = "RECOVERED";
+        const tx = await contract.reportLost(tokenId);
+        const receipt = await tx.wait();
 
-        res.json({
-            success: true,
-            isMinted: itemData[3], 
-            status: readableStatus
-        });
+        await Item.findOneAndUpdate({ tokenId: Number(tokenId) }, { status: 'LOST', statusUpdatedAt: new Date() });
+
+        res.status(200).json({ success: true, txHash: receipt.hash });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, error: "Failed to read blockchain" });
+        res.status(500).json({ success: false, error: error.reason || error.message });
     }
 };
 
-// NEW: Unlock a recovered device
+// 🔓 RECOVERED
 exports.markRecovered = async (req, res) => {
     try {
         const tokenId = req.params.id;
@@ -100,25 +52,40 @@ exports.markRecovered = async (req, res) => {
         const wallet = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
         const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, wallet);
 
-        console.log(`Relayer preparing to UNLOCK Token ID: ${tokenId}...`);
         const tx = await contract.reportRecovered(tokenId);
         await tx.wait();
-        // NEW: Remove from Mesh Network
-     activeMeshAlerts = activeMeshAlerts.filter(a => a.id !== tokenId.toString());
+
+        // 🔥 Sync recovery to MongoDB (removes it from Mesh Network logic)
+        await Item.findOneAndUpdate({ tokenId: Number(tokenId) }, { status: 'RECOVERED', lastLocation: null });
 
         res.json({ success: true, txHash: tx.hash });
     } catch (error) {
-        console.error("Recovery Error:", error);
         res.status(500).json({ success: false, error: "Failed to unlock device." });
     }
 };
 
-// NEW: Get all active BOLO alerts
-exports.getActiveAlerts = (req, res) => {
-    res.json({ success: true, alerts: activeMeshAlerts });
+// 📊 CHECK STATUS
+exports.checkStatus = async (req, res) => {
+    try {
+        const tokenId = req.params.id;
+        const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+        const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, provider);
+
+        const itemData = await contract.items(tokenId);
+
+        const statusEnum = itemData[1].toString();
+        let readableStatus = "SECURE";
+        if (statusEnum === "1") readableStatus = "LOST";
+        if (statusEnum === "2") readableStatus = "STOLEN";
+        if (statusEnum === "3") readableStatus = "RECOVERED";
+
+        res.json({ success: true, isMinted: itemData[3], status: readableStatus });
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Failed to read blockchain" });
+    }
 };
 
-// NEW: Transfer Ownership (Secondary Market)
+// 💸 TRANSFER ASSET
 exports.transferAsset = async (req, res) => {
     try {
         const { tokenId, newOwner } = req.body;
@@ -126,26 +93,61 @@ exports.transferAsset = async (req, res) => {
         const wallet = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
         const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, wallet);
 
-        console.log(`Attempting to transfer Token ID ${tokenId} to ${newOwner}...`);
         const tx = await contract.transferAsset(newOwner, tokenId);
         await tx.wait();
 
         res.json({ success: true, txHash: tx.hash });
     } catch (error) {
-        console.error("Transfer Error:", error);
-        // We want to pass the exact blockchain rejection message to the frontend!
         res.status(500).json({ success: false, error: error.reason || "Transfer blocked by smart contract." });
     }
 };
 
-// NEW: Live GPS Geotagging for Mesh Network
-exports.pingLocation = (req, res) => {
-    const { tokenId, lat, lon } = req.body;
-    
-    // Find the alert in our live memory and update its GPS location
-    const alert = activeMeshAlerts.find(a => a.id === tokenId.toString());
-    if (alert) {
-        alert.distance = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+// 🌐 ACTIVE ALERTS (MongoDB Powered Mesh Network)
+exports.getActiveAlerts = async (req, res) => {
+    try {
+        const missingItems = await Item.find({ status: { $in: ['STOLEN', 'LOST'] } });
+        
+        const alerts = missingItems.map(dbItem => {
+            // 🔥 THE FIX: Lock the time, and never use a live clock as a fallback!
+            let exactTime = "Time Unknown";
+            
+            if (dbItem.statusUpdatedAt) {
+                exactTime = new Date(dbItem.statusUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } else if (dbItem.updatedAt) {
+                // Fallback to Mongoose's auto-updater if our custom field missed it
+                exactTime = new Date(dbItem.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            const prefix = dbItem.status === 'STOLEN' ? '🚨 STOLEN:' : '⚠️ LOST:';
+            const deviceName = (dbItem.make && dbItem.model) ? `${dbItem.make} ${dbItem.model}` : 'VeriFind Protected Asset';
+
+            return {
+                id: dbItem.tokenId.toString(),
+                token: '#' + dbItem.tokenId,
+                model: `${prefix} ${deviceName}`, 
+                time: exactTime, // Locked perfectly in the past!
+                distance: dbItem.lastLocation ? `📍 Pinged at: ${dbItem.lastLocation}` : 'Location Pending...'
+            };
+        });
+
+        res.json({ success: true, alerts });
+    } catch (error) {
+        console.error("Alert Fetch Error:", error);
+        res.status(500).json({ success: false, error: "Failed to fetch mesh alerts" });
     }
-    res.json({ success: true });
+};
+
+// 📍 PING LOCATION (Save to MongoDB)
+exports.pingLocation = async (req, res) => {
+    try {
+        const { tokenId, lat, lon } = req.body;
+        const locationString = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+        
+        // Permanently attach the GPS ping to the asset!
+        await Item.findOneAndUpdate({ tokenId: Number(tokenId) }, { lastLocation: locationString });
+        
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Failed to save location" });
+    }
 };

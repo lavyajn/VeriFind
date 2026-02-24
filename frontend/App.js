@@ -6,6 +6,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import HomeScreen from './src/screens/HomeScreen';
 import ScannerScreen from './src/screens/ScannerScreen';
 import DeviceDetails from './src/screens/DeviceDetails';
+import MintScreen from './src/screens/MintScreen';
 
 const Stack = createStackNavigator();
 
@@ -18,6 +19,7 @@ export default function App() {
         <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
         <Stack.Screen name="ScannerScreen" component={ScannerScreen} options={{ title: 'Scan Asset' }} />
         <Stack.Screen name="DeviceDetails" component={DeviceDetails} options={{ title: 'Asset Status' }} />
+        <Stack.Screen name="MintScreen" component={MintScreen} options={{ headerShown: false }} />
         
       </Stack.Navigator>
     </NavigationContainer>

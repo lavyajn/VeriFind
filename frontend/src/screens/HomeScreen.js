@@ -85,18 +85,26 @@ export default function HomeScreen({ navigation }) {
             />
           )}
         </View>
-
-        {/* The Primary Action */}
-        <View style={styles.actionSection}>
+        {/* The Primary Action - UPGRADED UI */}
+        {/* The Primary Action - MATCHING RECTANGLES */}
+        <View style={styles.actionRow}>
           <TouchableOpacity 
-            style={styles.scanButton} 
+            style={[styles.actionButton, { marginRight: 10, backgroundColor: '#007AFF', shadowColor: '#007AFF' }]} 
             activeOpacity={0.8}
             onPress={() => navigation.navigate('ScannerScreen')} 
           >
-            <Text style={styles.scanButtonText}>📷 LAUNCH SCANNER</Text>
+            <Text style={styles.actionButtonText}>📷 SCAN</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: '#000', shadowColor: '#000' }]} 
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('MintScreen')} 
+          >
+            <Text style={styles.actionButtonText}>⚙️ MINT</Text>
           </TouchableOpacity>
         </View>
-
+    
       </View>
     </SafeAreaView>
   );
@@ -135,4 +143,7 @@ const styles = StyleSheet.create({
   actionSection: { paddingVertical: 20, alignItems: 'center' },
   scanButton: { backgroundColor: '#007AFF', width: width - 48, paddingVertical: 20, borderRadius: 20, alignItems: 'center', shadowColor: '#007AFF', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
   scanButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '800', letterSpacing: 1 },
+ actionRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 15 },
+  actionButton: { flex: 1, paddingVertical: 18, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  actionButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 1 },
 });
