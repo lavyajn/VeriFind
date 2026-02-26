@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/home/lavya/VeriFind/blockchain/contracts/AssetGuard.sol": {
-      "lastModificationDate": 1771937171910,
-      "contentHash": "9f9427691bc062c6a88f78710c2a3151",
+      "lastModificationDate": 1772009666069,
+      "contentHash": "3e4e937dc72cf98e4f60628a6cdd9c19",
       "sourceName": "contracts/AssetGuard.sol",
       "solcConfig": {
         "version": "0.8.20",

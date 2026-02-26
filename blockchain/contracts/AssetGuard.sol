@@ -26,7 +26,9 @@ contract AssetGuard is ERC721, ERC721URIStorage, Ownable {
 
     event ItemReported(uint256 indexed tokenId, Status status);
 
-    constructor() ERC721("AssetGuard", "AGD") Ownable(msg.sender) {}
+    constructor() ERC721("AssetGuard", "AGD") Ownable(msg.sender) {
+        approvedRelayers[msg.sender] = true; 
+    }
 
     function addRelayer(address relayer) public onlyOwner {
         approvedRelayers[relayer] = true;
