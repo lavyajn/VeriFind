@@ -112,7 +112,7 @@ npx expo start
 
 ---
 
-## 🎬 Hackathon Demo Flow
+## 🎬 Demo Flow
 
 Full lifecycle demonstration of the platform's cryptographic security:
 
@@ -134,4 +134,9 @@ Full lifecycle demonstration of the platform's cryptographic security:
 
 ---
 
-*Developed for the 2026 Hackathon.*
+🤝 The Team
+1.Harshil Bohra
+2.Prathmesh Alkute
+3.Lavya Jain
+
+---
