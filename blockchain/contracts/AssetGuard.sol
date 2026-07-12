@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract AssetGuard is ERC721, ERC721URIStorage, Ownable {
     uint256 private _nextTokenId;
 
-    // 🔥 V2 UPGRADE: Added LOST state
     enum Status { REGISTERED, LOST, STOLEN, RECOVERED }
 
     struct Item {
@@ -58,7 +57,6 @@ contract AssetGuard is ERC721, ERC721URIStorage, Ownable {
         emit ItemReported(tokenId, Status.STOLEN);
     }
 
-    // 🔥 V2 UPGRADE: REPORT LOST
     function reportLost(uint256 tokenId) public {
         require(items[tokenId].isMinted == true, "CRITICAL: This device does not exist on the blockchain!");
         require(msg.sender == ownerOf(tokenId) || approvedRelayers[msg.sender], "Not authorized!");

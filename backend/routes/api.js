@@ -19,14 +19,14 @@ const { loginUser } = require('../controllers/authController');
 const upload = multer({ dest: 'uploads/' });
 
 // ==========================================
-// 🏭 MANUFACTURER ROUTES (Genesis)
+//  MANUFACTURER ROUTES (Genesis)
 // ==========================================
 // The new Genesis route (expects an image file + text fields)
 router.post('/mint-device', upload.single('image'), mintGenesisDevice);
 
 
 // ==========================================
-// 📱 USER ASSET ROUTES (The Relayer)
+//  USER ASSET ROUTES (The Relayer)
 // ==========================================
 // Read true status from the blockchain
 router.get('/status/:id', checkStatus);
@@ -40,7 +40,7 @@ router.post('/transfer', transferAsset);
 
 
 // ==========================================
-// 🌐 MESH NETWORK ROUTES
+//  MESH NETWORK ROUTES
 // ==========================================
 // Fetch active BOLO alerts for the Home Screen
 router.get('/alerts', getActiveAlerts);
@@ -51,7 +51,7 @@ router.post('/ping-location', pingLocation);
 router.post('/report-lost', reportLostGasless);
 
 // ==========================================
-// 👤 USER AUTHENTICATION
+//  USER AUTHENTICATION
 // ==========================================
 router.post('/login', loginUser);
 

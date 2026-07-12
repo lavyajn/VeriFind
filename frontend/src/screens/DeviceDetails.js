@@ -323,7 +323,7 @@ export default function DeviceDetails({ route, navigation }) {
   const [status, setStatus] = useState('LOADING...'); 
   const [isMinted, setIsMinted] = useState(true);
   
-  // 🔥 NEW: Cryptographic Identity States
+  //  NEW: Cryptographic Identity States
   const [deviceOwnerWallet, setDeviceOwnerWallet] = useState('');
   const [currentUserWallet, setCurrentUserWallet] = useState('');
   
@@ -333,7 +333,7 @@ export default function DeviceDetails({ route, navigation }) {
   const cleanString = String(scannedData).replace(/[^0-9]/g, '');
   const tokenId = cleanString !== '' ? parseInt(cleanString) : 0; 
 
-  // 🔥 NEW: Fetch the logged-in user's wallet AND the blockchain's owner wallet
+  //  NEW: Fetch the logged-in user's wallet AND the blockchain's owner wallet
   useEffect(() => {
     const fetchStatus = async () => {
       // 1. Get current logged-in user

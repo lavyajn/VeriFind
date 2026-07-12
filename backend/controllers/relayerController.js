@@ -2,7 +2,6 @@ const Item = require('../models/Item');
 const { ethers } = require('ethers');
 const contractABI = require('../../blockchain/config/contractABI.json'); 
 
-// 🚨 REPORT STOLEN
 exports.reportStolenGasless = async (req, res) => {
     try {
         const { tokenId } = req.body;
@@ -23,7 +22,6 @@ exports.reportStolenGasless = async (req, res) => {
     }
 };
 
-// ⚠️ REPORT LOST
 exports.reportLostGasless = async (req, res) => {
     try {
         const { tokenId } = req.body;
@@ -44,7 +42,6 @@ exports.reportLostGasless = async (req, res) => {
     }
 };
 
-// 🔓 RECOVERED
 exports.markRecovered = async (req, res) => {
     try {
         const tokenId = req.params.id;
@@ -64,7 +61,6 @@ exports.markRecovered = async (req, res) => {
     }
 };
 
-// 📊 CHECK STATUS
 exports.checkStatus = async (req, res) => {
     try {
         const tokenId = req.params.id;
@@ -96,7 +92,6 @@ exports.checkStatus = async (req, res) => {
     }
 };
 
-// 💸 TRANSFER ASSET
 exports.transferAsset = async (req, res) => {
     try {
         const { tokenId, newOwner } = req.body;
@@ -113,13 +108,12 @@ exports.transferAsset = async (req, res) => {
     }
 };
 
-// 🌐 ACTIVE ALERTS (MongoDB Powered Mesh Network)
 exports.getActiveAlerts = async (req, res) => {
     try {
         const missingItems = await Item.find({ status: { $in: ['STOLEN', 'LOST'] } });
         
         const alerts = missingItems.map(dbItem => {
-            // 🔥 THE FIX: Lock the time, and never use a live clock as a fallback!
+            //  THE FIX: Lock the time, and never use a live clock as a fallback!
             let exactTime = "Time Unknown";
             
             if (dbItem.statusUpdatedAt) {
@@ -148,7 +142,7 @@ exports.getActiveAlerts = async (req, res) => {
     }
 };
 
-// 📍 PING LOCATION (Save to MongoDB)
+//  PING LOCATION (Save to MongoDB)
 exports.pingLocation = async (req, res) => {
     try {
         const { tokenId, lat, lon } = req.body;

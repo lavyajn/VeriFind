@@ -61,7 +61,7 @@ exports.mintGenesisDevice = async (req, res) => {
         const tx = await contract.manufacturerMint(ownerAddress, serialNumber, tokenURI);
         const receipt = await tx.wait();
 
-        // 🔥 THE FIX: Ask the blockchain which Token ID it just assigned to this Serial Number!
+        //  THE FIX: Ask the blockchain which Token ID it just assigned to this Serial Number!
         const mintedTokenId = await contract.serialToTokenId(serialNumber);
 
         console.log(`[4/4] Minted Token #${mintedTokenId}! Saving reference to MongoDB...`);

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // REPLACE THIS WITH YOUR LAPTOP'S ACTUAL IP ADDRESS
-const BACKEND_URL = 'http://10.215.180.158:5000/api'; 
+const BACKEND_URL = 'http://192.168.1.13:5000/api'; 
 
 export const reportItemStolen = async (tokenId) => {
     try {
@@ -35,7 +35,7 @@ export const reportItemRecovered = async (tokenId) => {
     }
 };
 
-// 🔥 Added a timestamp query so the phone NEVER caches this request!
+//  Added a timestamp query so the phone NEVER caches this request!
 export const fetchMeshAlerts = async () => {
     try {
         const timestamp = new Date().getTime();

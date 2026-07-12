@@ -37,7 +37,7 @@ export default function HomeScreen({ navigation }) {
         isActive = false; 
         clearInterval(intervalId); 
       };
-    }, []) // 🚨 THIS MUST BE AN EMPTY ARRAY []
+    }, []) //  THIS MUST BE AN EMPTY ARRAY []
   );
 
   const renderAlert = ({ item }) => (
@@ -68,7 +68,7 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.logoText}>Veri<Text style={styles.logoHighlight}>Find</Text></Text>
           <Text style={styles.tagline}>Decentralized Asset Protection</Text>
           
-          {/* 🔥 SLEEK TOP-RIGHT LOGOUT ARROW */}
+          {/*  SLEEK TOP-RIGHT LOGOUT ARROW */}
           <TouchableOpacity onPress={handleLogout} style={styles.logoutButton} activeOpacity={0.7}>
             <Text style={styles.logoutArrow}>➔</Text>
           </TouchableOpacity>
