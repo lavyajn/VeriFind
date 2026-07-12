@@ -102,7 +102,7 @@ Everyone else is limited to read-only verification.
 
 ---
 
-# Features
+# 🚀 Features
 
 ## Ownership Verification
 
@@ -148,7 +148,7 @@ Everyone else is limited to read-only verification.
 
 ---
 
-## Security
+## 🔐 Security
 
 - Wallet authentication
 - Read-only verification mode
@@ -179,7 +179,7 @@ Generate QR
 
 ---
 
-# System Architecture
+# 🏗️ System Architecture
 
 <p align="center">
 
@@ -285,7 +285,7 @@ Once transferred:
 
 ---
 
-# Screenshots
+# 📱 Screenshots
 
 ## Login
 
@@ -341,7 +341,7 @@ Once transferred:
 
 ---
 
-# Tech Stack
+# 🛠️ Tech Stack
 
 | Layer | Technologies |
 |------------|-------------------------------|
@@ -355,7 +355,7 @@ Once transferred:
 
 ---
 
-# Installation
+# ⚙️ Installation
 
 ## Clone Repository
 
@@ -433,7 +433,7 @@ EXPO_PUBLIC_BACKEND_URL=http://YOUR_IP:5000/api
 
 ---
 
-# Future Improvements
+# 🔮 Future Improvements
 
 - Native Android/iOS integration
 - Manufacturer partnerships
@@ -448,7 +448,7 @@ EXPO_PUBLIC_BACKEND_URL=http://YOUR_IP:5000/api
 
 ---
 
-# Team
+# 👥 Team
 
 - Harshil Bohra
 - Prathmesh Alkute
