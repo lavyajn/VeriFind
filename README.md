@@ -183,7 +183,7 @@ Generate QR
 
 <p align="center">
 
-<img src="docs/high_level_architecture.png">
+<img src="docs/architecture/high_level_architecture.png">
 
 </p>
 
@@ -203,7 +203,7 @@ Ownership state is ultimately maintained by Solidity smart contracts while Mongo
 
 <p align="center">
 
-<img src="docs/device_registration.png">
+<img src="docs/architecture/device_registration.png">
 
 </p>
 
@@ -219,7 +219,7 @@ Ownership is minted as an ERC-721 token and permanently linked to the purchaser'
 
 <p align="center">
 
-<img src="docs/device_verification.png">
+<img src="docs/architecture/device_verification.png">
 
 </p>
 
@@ -244,7 +244,7 @@ Otherwise, the user receives read-only device information.
 
 <p align="center">
 
-<img src="docs/ownership_transfer.png">
+<img src="docs/architecture/ownership_transfer.png">
 
 </p>
 
@@ -289,55 +289,55 @@ Once transferred:
 
 ## Login
 
-<img src="docs/login.png">
+<img src="docs/screenshots/login.png">
 
 ---
 
 ## Dashboard
 
-<img src="docs/dashboard.png">
+<img src="docs/screenshots/dashboard.png">
 
 ---
 
 ## Manufacturer Dashboard
 
-<img src="docs/manufacturer.png">
+<img src="docs/screenshots/manufacturer.png">
 
 ---
 
 ## QR Generation
 
-<img src="docs/qr_generation.png">
+<img src="docs/screenshots/qr_generation.png">
 
 ---
 
 ## Scan Device
 
-<img src="docs/scan_qr.png">
+<img src="docs/screenshots/scan_qr.png">
 
 ---
 
 ## Owner Dashboard
 
-<img src="docs/owner_dashboard.png">
+<img src="docs/screenshots/owner_dashboard.png">
 
 ---
 
 ## Read Only Mode
 
-<img src="docs/read_only.png">
+<img src="docs/screenshots/read_only.png">
 
 ---
 
 ## Transfer Ownership
 
-<img src="docs/transfer.png">
+<img src="docs/screenshots/transfer.png">
 
 ---
 
 ## BOLO Alert
 
-<img src="docs/bolo.png">
+<img src="docs/screenshots/bolo.png">
 
 ---
 
@@ -458,6 +458,6 @@ EXPO_PUBLIC_BACKEND_URL=http://YOUR_IP:5000/api
 
 <p align="center">
 
-Built with ❤️ to create a safer second-hand electronics ecosystem through decentralized ownership verification.
+Built to create a safer second-hand electronics ecosystem through decentralized ownership verification.
 
 </p>
