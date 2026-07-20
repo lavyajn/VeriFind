@@ -96,7 +96,7 @@ Everyone else is limited to read-only verification.
 
 <p align="center">
 
-<img src="docs/demo.gif" width="900">
+<img src="docs/verifind_demo.gif" width="900">
 
 </p>
 
@@ -311,12 +311,6 @@ Once transferred:
 
 ---
 
-## Scan Device
-
-<img src="docs/screenshots/scan_qr.png">
-
----
-
 ## Owner Dashboard
 
 <img src="docs/screenshots/owner_dashboard.png">
@@ -360,7 +354,7 @@ Once transferred:
 ## Clone Repository
 
 ```bash
-git clone https://github.com/username/verifind.git
+git clone https://github.com/lavyajn/VeriFind
 
 cd verifind
 ```
