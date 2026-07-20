@@ -287,53 +287,22 @@ Once transferred:
 
 # 📱 Screenshots
 
-## Login
+<p align="center">
+  <img src="docs/screenshots/login.png" width="220">
+  <img src="docs/screenshots/dashboard.png" width="220">
+  <img src="docs/screenshots/manufacturer.png" width="220">
+</p>
 
-<p><img src="docs/screenshots/login.png" width="280></p>
+<p align="center">
+  <img src="docs/screenshots/qr_generation.png" width="220">
+  <img src="docs/screenshots/owner_dashboard.png" width="220">
+  <img src="docs/screenshots/read_only.png" width="220">
+</p>
 
----
-
-## Dashboard
-
-<img src="docs/screenshots/dashboard.png" width="280>
-
----
-
-## Manufacturer Dashboard
-
-<img src="docs/screenshots/manufacturer.png" width="280>
-
----
-
-## QR Generation
-
-<img src="docs/screenshots/qr_generation.png" width="280>
-
----
-
-## Owner Dashboard
-
-<img src="docs/screenshots/owner_dashboard.png" width="280>
-
----
-
-## Read Only Mode
-
-<img src="docs/screenshots/read_only.png" width="280>
-
----
-
-## Transfer Ownership
-
-<img src="docs/screenshots/transfer.png" width="280>
-
----
-
-## BOLO Alert
-
-<img src="docs/screenshots/bolo.png" width="280>
-
----
+<p align="center">
+  <img src="docs/screenshots/transfer.png" width="220">
+  <img src="docs/screenshots/bolo.png" width="220">
+</p>
 
 # 🛠️ Tech Stack
 
