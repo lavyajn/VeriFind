@@ -96,7 +96,7 @@ Everyone else is limited to read-only verification.
 
 <p align="center">
 
-<img src="docs/verifind_demo.gif" width="900">
+<img src="docs/verifind_demo.gif" width="280">
 
 </p>
 
@@ -289,49 +289,49 @@ Once transferred:
 
 ## Login
 
-<img src="docs/screenshots/login.png">
+<img src="docs/screenshots/login.png" width="280>
 
 ---
 
 ## Dashboard
 
-<img src="docs/screenshots/dashboard.png">
+<img src="docs/screenshots/dashboard.png" width="280>
 
 ---
 
 ## Manufacturer Dashboard
 
-<img src="docs/screenshots/manufacturer.png">
+<img src="docs/screenshots/manufacturer.png" width="280>
 
 ---
 
 ## QR Generation
 
-<img src="docs/screenshots/qr_generation.png">
+<img src="docs/screenshots/qr_generation.png" width="280>
 
 ---
 
 ## Owner Dashboard
 
-<img src="docs/screenshots/owner_dashboard.png">
+<img src="docs/screenshots/owner_dashboard.png" width="280>
 
 ---
 
 ## Read Only Mode
 
-<img src="docs/screenshots/read_only.png">
+<img src="docs/screenshots/read_only.png" width="280>
 
 ---
 
 ## Transfer Ownership
 
-<img src="docs/screenshots/transfer.png">
+<img src="docs/screenshots/transfer.png" width="280>
 
 ---
 
 ## BOLO Alert
 
-<img src="docs/screenshots/bolo.png">
+<img src="docs/screenshots/bolo.png" width="280>
 
 ---
 
