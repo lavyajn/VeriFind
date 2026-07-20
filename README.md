@@ -289,7 +289,7 @@ Once transferred:
 
 ## Login
 
-<img src="docs/screenshots/login.png" width="280>
+<p><img src="docs/screenshots/login.png" width="280></p>
 
 ---
 
